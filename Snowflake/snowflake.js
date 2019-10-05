@@ -169,24 +169,24 @@ window.onload = function init()
     }
 
 
-	// //*********增加鼠标点击事件,移动坐标中心
-	// //canvas.addEventListener("click", function(event) {
-	// canvas.addEventListener("mousedown", function(event){
-        // 	centerX= -1 + (2*event.clientX/canvas.width);
-        //     centerY= -1 + 2*(canvas.height-event.clientY)/canvas.height;
-	// 	centerchageflag=true;	  
+	//*********增加鼠标点击事件,移动坐标中心
+	//canvas.addEventListener("click", function(event) {
+	canvas.addEventListener("mousedown", function(event){
+        centerX= -1 + (2*event.clientX/canvas.width);
+        centerY= -0.4 + 2*(canvas.height-event.clientY)/canvas.height;
+    centerchageflag=true;	  
     
-	// 	 /*为画布添加点击事件，从画布坐标到裁剪坐标计算同课本。
-	// 		注：canvas内坐标计算为
-	// 		X=(event.clientX - bbox.left) * (canvas.width/bbox.width)
-	// 		Y=(event.clientY - bbox.top) * (canvas.height/bbox.height)
-	// 		这里是将裁剪坐标下（0，0）点平移到点击位置，故在计算偏移量时是减去0。
-	// 		*/
-	//     /* var bbox = canvas.getBoundingClientRect();
-	// 	 centerX=2*(event.clientX - bbox.left) * (canvas.width/bbox.width)/canvas.width-1;
-	// 	 centerY=2*(canvas.height- (event.clientY - bbox.top) * (canvas.height/bbox.height))/canvas.height-1;
-  	// 	 centerchageflag=true;	 */
-	// });
+		 /*为画布添加点击事件，从画布坐标到裁剪坐标计算同课本。
+			注：canvas内坐标计算为
+			X=(event.clientX - bbox.left) * (canvas.width/bbox.width)
+			Y=(event.clientY - bbox.top) * (canvas.height/bbox.height)
+			这里是将裁剪坐标下（0，0）点平移到点击位置，故在计算偏移量时是减去0。
+			*/
+	    /* var bbox = canvas.getBoundingClientRect();
+		 centerX=2*(event.clientX - bbox.left) * (canvas.width/bbox.width)/canvas.width-1;
+		 centerY=2*(canvas.height- (event.clientY - bbox.top) * (canvas.height/bbox.height))/canvas.height-1;
+  		 centerchageflag=true;	 */
+	});
     
 	//*******动画启动/停止监听器 Initialize event handlers
     document.getElementById("Animation").onclick = function () {
@@ -201,8 +201,8 @@ window.onload = function init()
 
 function line(a, b) {
     points.push(a, b);
-    // colorsOfVertexs.push(c1);
-    // colorsOfVertexs.push(c1);
+    colorsOfVertexs.push(c1);
+    colorsOfVertexs.push(c1);
 }
 
 function divideLine(a, b, depth) {
@@ -238,7 +238,6 @@ function firstTriangle(a, b, c, depth) {
 
 function triangle( a, b, c )
 {
-
     points.push( a, b, c );	
 	colorsOfVertexs.push(c1);
 	colorsOfVertexs.push(c2);
