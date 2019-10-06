@@ -3,32 +3,29 @@
 var canvas;
 var gl;
 
-var numTimesToSubdivide = 0; //原来值是5,Num修改为num ???
-var points = []; //存放所生成的所有顶点的位置
+var numTimesToSubdivide = 1;    // 递归次数
+var points = [];    // 生成的所有顶点的位置
 
 var program;
 var bufferId;
 var colorbufferId;
 
-var vertices = [
-    // vec2( -0.6, -0.6 ),
-    // vec2(  0,  0.6 ),
-    // vec2(  0.6, -0.6)
+var vertices = [    // 初始顶点位置
     vec2( -1.732 * 0.3, -1 * 0.3),
     vec2(  0 * 0.3,  2 * 0.3),
     vec2(  1.732 * 0.3, -1 * 0.3)
 ];
 
-var velocities = [
+var velocities = [  // 可选的几种速度
     0.03,
     0.06,
     0.1
 ]
-var velocity = velocities[0];
+var velocity = velocities[0];   // 当前设定的速度
 
-var colorsOfVertexs=[]; //存放所生成的所有顶点的颜色
-var c1,c2,c3;
-var c_white = vec4( 1.0, 1.0, 1.0, 1.0 );
+var colorsOfVertexs=[]; // 存放所生成的所有顶点的颜色
+var c1,c2;  // 当前选中的两种颜色
+var c_white = vec4( 1.0, 1.0, 1.0, 1.0 );   // 可选的三种颜色
 var c_black = vec4( 0.0, 0.0, 0.0, 1.0 );
 var c_babyBlue = vec4( 0.6, 1.0, 1.0, 1.0 );
 c1 = c_white;
@@ -44,10 +41,11 @@ var centerYLoc;
 var animflag = false;
 var sliderchangeflag = false;
 var centerchageflag = false;
-var orientationFlag = false;
-var colorChangeFlag = false;
+var orientationFlag = false;    // 记录当前旋转的方向
+var colorChangeFlag = false;    // 颜色选择改变的标记
 
-//====add=============
+var fractal = 0;    // 当前的分形图案，0表示雪花，1表示二叉树
+
 window.onload = function init() 
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -55,26 +53,23 @@ window.onload = function init()
 	// 从setupWebGL()的返回值是一个JavaScript对象，它包含WebGL支持的所有OpenGL函数方法。
     if ( !gl ) { alert( "WebGL isn't available" ); }
     
-    //
-    //  Configure WebGL
-    //
 	gl.viewport( 0, 0, canvas.width, canvas.height );
 	// 来设置视口，即指定从标准设备到窗口坐标的x、y仿射变换
 	// 如果你重新改变了canvas的大小，你需要使用该语句告诉WebGL上下文设定新的视口
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 	// 设置清空颜色缓冲时的颜色值。这指定调用 clear() 方法时使用的颜色值。这些值在0到1的范围间。
     
-    //====================================================
-    //  Initialize our data for the Snowflake
-    //====================================================
-    
-    firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+    // 初始化分形图形
+    if(fractal == 0) {
+        firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+    } else if(fractal == 1) {
+        drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+    }
     
     // Load shaders and initialize attribute buffers
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
 	// operations like attaching and linking are done in the initShaders.js
 	gl.useProgram( program );
-	
     
     // Load the data into the GPU
 	bufferId = gl.createBuffer();
@@ -104,16 +99,42 @@ window.onload = function init()
 	
 	render();
     
-    //*******增加滑动条的监听程序,重新生成顶点，重新绘制
+    //*******分形图案的种类选择监听程序,重新生成顶点，重新绘制
+    document.getElementById("fractal").onchange = function(event) {
+        var newValue = parseInt(event.target.value);
+        points = [];
+        colorsOfVertexs=[];
+        if(newValue == 0) {
+            console.log("now change the fractal to 0");
+            fractal = 0;
+            firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        } else if(newValue == 1) {
+            fractal = 1;
+            console.log("now change the fractal to 1");
+            drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+        } else {
+            console.log("wth");
+            console.log("the newValue is " + newValue);
+        }
+        sliderchangeflag = true;
+    }
+
+    //*******递归深度的监听程序,重新生成顶点，重新绘制
 	document.getElementById("slider").onchange = function(event) {
         numTimesToSubdivide = parseInt(event.target.value);
 		points = [];
-		colorsOfVertexs=[];
-        firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
-		sliderchangeflag=true;			
+        colorsOfVertexs=[];
+        if(fractal == 0) {
+            console.log("the fractal is 0");
+            firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        } else if(fractal == 1) {
+            console.log("the fractal is 1");
+            drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+        }
+		sliderchangeflag = true;			
     };	
 
-    //*******增加颜色选择框的监听程序,重新生成顶点，重新绘制
+    //*******颜色选择框的监听程序,重新生成顶点，重新绘制
     document.getElementById("color1").onchange = function(event) {
         var newValue = parseInt(event.target.value);
         points = [];
@@ -128,7 +149,11 @@ window.onload = function init()
             case 3:
                 c1 = c_babyBlue;
         }
-        firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        if(fractal == 0) {
+            firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        } else if(fractal == 1) {
+            drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+        }
 		sliderchangeflag = true;			
     }
     document.getElementById("color2").onchange = function(event) {
@@ -145,11 +170,15 @@ window.onload = function init()
             case 3:
                 c2 = c_babyBlue;
         }
-        firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        if(fractal == 0) {
+            firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        } else if(fractal == 1) {
+            drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+        }
 		sliderchangeflag = true;			
     }
 
-    //*******增加颜色选择框的监听程序,重新生成顶点，重新绘制
+    //*******速度选择框的监听程序,重新生成顶点，重新绘制
     this.document.getElementById("sliderForVelocity").onchange = function(event) {
         var newValue = parseInt(event.target.value);
         points = [];
@@ -164,49 +193,83 @@ window.onload = function init()
             case 3:
                 velocity = velocities[2];
         }
-        firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        if(fractal == 0) {
+            firstTriangle(vertices[0], vertices[1], vertices[2], numTimesToSubdivide);
+        } else if(fractal == 1) {
+            drawTree(vec2(0, -0.4), 0.3, 0.7, numTimesToSubdivide);
+        }
 		sliderchangeflag = true;	
     }
 
-
-	//*********增加鼠标点击事件,移动坐标中心
+	//*********鼠标点击事件,移动坐标中心
 	//canvas.addEventListener("click", function(event) {
 	canvas.addEventListener("mousedown", function(event){
         centerX= -1 + (2*event.clientX/canvas.width);
         centerY= -0.4 + 2*(canvas.height-event.clientY)/canvas.height;
-    centerchageflag=true;	  
-    
-		 /*为画布添加点击事件，从画布坐标到裁剪坐标计算同课本。
-			注：canvas内坐标计算为
-			X=(event.clientX - bbox.left) * (canvas.width/bbox.width)
-			Y=(event.clientY - bbox.top) * (canvas.height/bbox.height)
-			这里是将裁剪坐标下（0，0）点平移到点击位置，故在计算偏移量时是减去0。
-			*/
-	    /* var bbox = canvas.getBoundingClientRect();
-		 centerX=2*(event.clientX - bbox.left) * (canvas.width/bbox.width)/canvas.width-1;
-		 centerY=2*(canvas.height- (event.clientY - bbox.top) * (canvas.height/bbox.height))/canvas.height-1;
-  		 centerchageflag=true;	 */
+        centerchageflag=true;
 	});
     
-	//*******动画启动/停止监听器 Initialize event handlers
+	//*******动画启动/停止监听器
     document.getElementById("Animation").onclick = function () {
         animflag = !animflag;
     };
-	//*******改变旋转方向监听器 Initialize event handlers
+
+	//*******改变旋转方向监听器
     document.getElementById("Orientation").onclick = function () {
         orientationFlag = !orientationFlag;
     };
-
 };
 
-function line(a, b) {
-    points.push(a, b);
-    colorsOfVertexs.push(c1);
-    colorsOfVertexs.push(c1);
+function drawTree(p, length, ratio, depth) {
+    var cross = {};
+    var value = [];
+    cross.x = p[0];
+    cross.y = p[1] + length;
+    cross.arc = Math.PI/2;
+    value.push(cross);
+    points.push(vec2(cross.x, cross.y), vec2(p[0], p[1]));  // 画初始的竖线
+    colorsOfVertexs.push(c1, c2);
+	growBranch(value, length*ratio, ratio, depth);
+}
+
+function growBranch(value, bralen, ratio, depth)
+{  	
+    depth = depth - 1;
+    if(depth == 0)
+        return;
+    var value1=[];
+    value.forEach(function(item,index)
+    {
+        // var arc1=item.arc+(Math.PI*4)/(3*2);
+        // var arc2=item.arc-(Math.PI*4)/(3*2);
+        var arc1=item.arc+(Math.PI)/(3*2);
+        var arc2=item.arc-(Math.PI)/(3*2);
+    	// branch 1
+    	var bx=Math.cos(arc1)*bralen;
+    	var by=Math.sin(arc1)*bralen;
+        points.push(vec2(item.x,item.y), vec2(item.x+bx, item.y+by));
+        colorsOfVertexs.push(c1, c2);
+    	var cross={};
+    	cross.x=item.x+bx;
+    	cross.y=item.y+by;
+    	cross.arc=arc1;
+    	value1.push(cross)
+    	// branch 2
+        var bx1=Math.cos(arc2)*bralen;
+    	var by1=Math.sin(arc2)*bralen;
+        points.push(vec2(item.x,item.y), vec2(item.x+bx1, item.y+by1))
+        colorsOfVertexs.push(c1, c2);
+    	var cross1={};
+    	cross1.x=item.x+bx1;
+    	cross1.y=item.y+by1;
+    	cross1.arc=arc2;
+    	value1.push(cross1);
+    });
+    growBranch(value1, bralen*ratio, ratio, depth);
 }
 
 function divideLine(a, b, depth) {
-    if (depth == 0) {
+    if(depth == 0) {
         vertices.push(a);
         vertices.push(b);
         points.push(a, b);
@@ -236,44 +299,11 @@ function firstTriangle(a, b, c, depth) {
     divideLine(c, a, depth);
 }
 
-function triangle( a, b, c )
-{
-    points.push( a, b, c );	
-	colorsOfVertexs.push(c1);
-	colorsOfVertexs.push(c2);
-	colorsOfVertexs.push(c3);
-}
-
-function divideTriangle( a, b, c, count )
-{
-	// count is the times triangles need to subdivide
-
-    // check for end of recursion
-    if ( count == 0 ) {
-        triangle( a, b, c );
-    }
-    else {
-        // bisect the sides
-        var ab = mix( a, b, 0.5 );
-        var ac = mix( a, c, 0.5 );
-        var bc = mix( b, c, 0.5 );
-
-        count=count-1;        //count--;	
-         		
-        // three new triangles，递归调用
-        divideTriangle( a, ab, ac, count );
-		divideTriangle( ab,b, bc, count );
-		divideTriangle( ac, bc, c, count );
-        // divideTriangle( b, bc, ab, count );
-		// divideTriangle( c, ac, bc, count );
-    }
-}
-
 function render()
 {
     gl.clear( gl.COLOR_BUFFER_BIT );		
 
-	if(animflag)//如果旋转控制按钮由切换，需要发送旋转角度给shader
+	if(animflag)    // 如果旋转控制按钮由切换，需要发送旋转角度给shader
 	{
         if(orientationFlag) {   // 如果旋转方向控制钮被触发，需要改变旋转方向
             theta -= velocity;
@@ -283,7 +313,7 @@ function render()
 		gl.uniform1f(thetaLoc, theta);		
     }; 	
         
-	if(sliderchangeflag)//如果slider值有变化需要发送Gasket2D 新初始顶点属性数据给shader
+	if(sliderchangeflag)    // 如果slider值有变化需要发送Gasket2D 新初始顶点属性数据给shader
 	{	
 		gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );	
 		gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );		
@@ -291,15 +321,16 @@ function render()
 		gl.bufferData( gl.ARRAY_BUFFER, flatten(colorsOfVertexs), gl.STATIC_DRAW );		
     }	
 	
-	if(centerchageflag)//如果鼠标重新点击了中心，需要把新中心传递给shader
+	if(centerchageflag) // 如果鼠标重新点击了中心，需要把新中心传递给shader
 	{
 		gl.uniform1f(centerXLoc, centerX);
 		gl.uniform1f(centerYLoc, centerY);
     }
 	
-    // gl.drawArrays( gl.TRIANGLES, 0, points.length );	
+    // gl.drawArrays(gl.TRIANGLES, 0, points.length );	
     // gl.drawArrays(gl.LINE_STRIP, 0, points.length);
-    gl.drawArrays(gl.LINE_LOOP, 0, points.length);
+    // gl.drawArrays(gl.LINE_LOOP, 0, points.length);
+    gl.drawArrays(gl.LINES, 0, points.length);
 	sliderchangeflag=false;
 	centerchageflag=false;
 
